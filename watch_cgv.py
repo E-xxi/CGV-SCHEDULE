@@ -85,6 +85,7 @@ GOTO_TIMEOUT_MS = 40000
 RESPONSE_TIMEOUT_MS = 25000
 
 
+
 # ────────────────────────────────────────────────────────────────────────────
 # 브라우저로 상영 회차(JSON row) 가로채기
 # ────────────────────────────────────────────────────────────────────────────
@@ -231,11 +232,17 @@ def send_discord_message(text: str) -> None:
     - DISCORD_BOT_TOKEN + DISCORD_USER_ID 가 있으면 봇이 내 계정으로 DM 을 보낸다.
     - 아니면 DISCORD_WEBHOOK_URL 로 채널 웹훅 메시지를 보낸다.
     """
-    token = os.environ.get("DISCORD_BOT_TOKEN")
-    user_id = os.environ.get("DISCORD_USER_ID")
-    webhook = os.environ.get("DISCORD_WEBHOOK_URL")
+    token = (os.environ.get("DISCORD_BOT_TOKEN") or "").strip()
+    user_id = (os.environ.get("DISCORD_USER_ID") or "").strip()
+    webhook = (os.environ.get("DISCORD_WEBHOOK_URL") or "").strip()
 
     content = text[:1990]  # 디스코드 content 2000자 제한
+
+    if token and not token.isascii():
+        raise RuntimeError(
+            "DISCORD_BOT_TOKEN 값이 이상합니다. .env 의 '여기에_봇_토큰' 자리에 "
+            "실제 봇 토큰을 넣었는지 확인하세요."
+        )
 
     if token and user_id:
         _send_discord_dm(token, user_id, content)
