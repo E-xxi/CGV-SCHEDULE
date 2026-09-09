@@ -56,13 +56,39 @@ python watch_cgv.py --headed        # 브라우저 창 띄워서 확인 (디버�
 | `CGV_PLAY_YMD` | `20260916` | 상영일 `YYYYMMDD` |
 | `CGV_SCREEN_GRADE_CD` | `03` | 특별관 등급 (`03`=IMAX, `02`=4DX, `04`=SCREENX, 빈 값=전체) |
 
-## 주기적 실행
+## 10분마다 자동 감시
 
-`state.json`의 `notified`가 `true`가 되면 더 이상 알리지 않습니다. 다시 감시하려면
-`{"notified": false}`로 되돌리세요.
+토큰 등은 `.env` 파일에 넣습니다 (git 에 안 올라감):
 
-- **국내 머신 cron (권장):** `*/10 * * * * cd /path/to/repo && .venv/bin/python watch_cgv.py`
-- **GitHub Actions:** `watch.yml` 참고 — 한국 self-hosted runner 필요.
+```bash
+cp .env.example .env
+# .env 를 열어서 DISCORD_BOT_TOKEN 채우기
+```
+
+**방법 A — `run.sh` (제일 간단)**
+
+10분마다 `watch_cgv.py` 를 돌리고, 예매가 열려 알림이 한 번 나가면 스스로 멈춥니다.
+
+```bash
+caffeinate -s ./run.sh                    # 맥이 안 자고 계속 (전원 연결 권장)
+# 또는 백그라운드로:
+nohup ./run.sh > /dev/null 2>&1 &
+# 중지: Ctrl+C  또는  pkill -f watch_cgv.py
+```
+
+로그는 `watch.log` 에 쌓입니다.
+
+**방법 B — cron**
+
+```cron
+*/10 * * * * cd /Users/이름/Documents/GitHub/CGV-SCHEDULE && set -a && . ./.env && set +a && .venv/bin/python watch_cgv.py >> watch.log 2>&1
+```
+
+> ⚠️ 맥이 잠들면(cron·run.sh 둘 다) 그 동안은 안 돌아갑니다. 계속 켜두거나 `caffeinate` 를 쓰세요.
+> GitHub Actions(`watch.yml`)는 미국 러너라 Cloudflare 에 막혀서 사실상 안 됩니다.
+
+`state.json` 의 `notified` 가 `true` 가 되면 더 이상 알리지 않습니다. 다시 감시하려면
+`{"notified": false}` 로 되돌리세요.
 
 ## 참고
 
