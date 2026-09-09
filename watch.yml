@@ -1,18 +1,24 @@
 name: CGV 센텀 IMAX 오디세이 예매 오픈 감시
 
+# ⚠️ 중요 제약
+#   새 CGV 사이트(cgv.co.kr)는 Cloudflare 뒤에 있어 해외/데이터센터 IP를 403으로 막습니다.
+#   GitHub 호스팅 러너(ubuntu-latest)는 미국 IP라 대부분 차단됩니다.
+#   => 안정적으로 돌리려면 한국에 있는 self-hosted runner(집 PC / 국내 VPS)를 쓰거나,
+#      이 워크플로 대신 국내 머신에서 cron 으로 watch_cgv.py 를 직접 돌리세요.
+#   아래 설정은 self-hosted runner 를 쓴다는 가정입니다. 호스팅 러너로 시도하려면
+#   runs-on 을 ubuntu-latest 로 바꾸고, 자주 실패할 수 있음을 감안하세요.
+
 on:
   schedule:
-    # 10분마다 실행 (UTC 기준 cron). GitHub 사양상 정확히 10분 간격이 100% 보장되진 않고,
-    # 트래픽이 몰리면 몇 분 정도 밀릴 수 있습니다.
-    - cron: '*/10 * * * *'
-  workflow_dispatch: {}   # Actions 탭에서 수동으로 "Run workflow" 버튼으로 즉시 실행 가능
+    - cron: '*/10 * * * *'   # 10분마다 (GitHub 사양상 지연될 수 있음)
+  workflow_dispatch: {}
 
 permissions:
-  contents: write   # state.json 변경사항을 커밋하기 위해 필요
+  contents: write   # state.json 커밋용
 
 jobs:
   watch:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]   # 한국 IP 러너. 호스팅 러너로 시도하려면 ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -21,12 +27,14 @@ jobs:
           python-version: '3.11'
 
       - name: 의존성 설치
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
 
-      - name: 예매 오픈 여부 확인 및 텔레그램 알림
+      - name: 예매 오픈 여부 확인 및 디스코드 알림
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          # 필요하면 대상 변경: CGV_SITE_NO / CGV_PLAY_YMD / CGV_MOVIE_KEYWORD 등
         run: python watch_cgv.py
 
       - name: state.json 변경사항 커밋
