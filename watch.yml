@@ -33,10 +33,13 @@ jobs:
 
       - name: 예매 오픈 여부 확인 및 디스코드 알림
         env:
+<<<<<<< HEAD
           # 봇 DM 방식 (①): 아래 둘을 secrets 에 등록
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
           # 웹훅 방식 (②)을 쓰려면 위 둘 대신 이것만:
+=======
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           # 필요하면 대상 변경: CGV_SITE_NO / CGV_PLAY_YMD / CGV_MOVIE_KEYWORD 등
         run: python watch_cgv.py
