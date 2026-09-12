@@ -14,7 +14,11 @@ CGV 센텀시티 IMAX '오디세이' 예매 오픈 감시 스크립트 (신 사�
   3) 응답 안에서 영화명에 '오디세이'가 포함되고, 상영일이 TARGET_PLAY_YMD 이며,
      특별관 등급이 IMAX('03')인 회차가 있는지 찾는다.
   4) 처음 발견되는 순간(state.json 에 아직 notified 가 안 찍혀 있을 때)
+<<<<<<< HEAD
      디스코드로 알림을 보낸다 (봇 DM 또는 웹훅).
+=======
+     디스코드 웹훅으로 알림을 보낸다.
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
 
 ■ 중요한 제약
   cgv.co.kr 은 Cloudflare 뒤에 있어서 한국 외 IP / 데이터센터 IP 는 403 으로 막힙니다.
@@ -31,7 +35,10 @@ CGV 센텀시티 IMAX '오디세이' 예매 오픈 감시 스크립트 (신 사�
   python watch_cgv.py               # 예매 오픈 여부 확인 + (열렸으면) 디스코드 알림
   python watch_cgv.py --debug       # 가로챈 회차/응답을 자세히 출력 (알림 안 보냄)
   python watch_cgv.py --list-theaters  # 극장명 -> siteNo 목록을 덤프 (siteNo 를 모를 때)
+<<<<<<< HEAD
   python watch_cgv.py --test-notify # 디스코드 알림 설정이 되는지 테스트 메시지 1건 발송
+=======
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
   python watch_cgv.py --headed      # 브라우저 창을 띄워서 눈으로 확인 (디버깅용)
 
   환경변수로 대상 변경 가능:
@@ -40,6 +47,7 @@ CGV 센텀시티 IMAX '오디세이' 예매 오픈 감시 스크립트 (신 사�
     CGV_MOVIE_KEYWORD 영화명 키워드 (기본 '오디세이')
     CGV_PLAY_YMD      상영일 YYYYMMDD (기본 '20260916')
     CGV_SCREEN_GRADE_CD  특별관 등급코드 (기본 '03'=IMAX, 빈 값이면 등급 상관없이)
+<<<<<<< HEAD
 
   디스코드 알림 (둘 중 하나 설정):
     ① 봇 DM  — 내 계정으로 봇이 개인 메시지를 보냄
@@ -48,6 +56,9 @@ CGV 센텀시티 IMAX '오디세이' 예매 오픈 감시 스크립트 (신 사�
        * 봇과 내가 같은 서버에 있어야 하고, 그 서버의 "서버 멤버가 보내는 DM 허용"이 켜져 있어야 함
     ② 웹훅 — 특정 채널로 보냄 (더 간단)
        DISCORD_WEBHOOK_URL 채널 설정 → 연동 → 웹후크 → 새 웹후크
+=======
+    DISCORD_WEBHOOK_URL  알림 받을 디스코드 웹훅 URL
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
 """
 
 import os
@@ -223,6 +234,7 @@ def save_state(state: dict) -> None:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
+<<<<<<< HEAD
 DISCORD_API = "https://discord.com/api/v10"
 
 
@@ -332,6 +344,66 @@ def main():
     if "--test-notify" in argv:
         send_discord_message("CGV 예매 감시 봇 테스트 메시지입니다. 이게 보이면 알림 설정 정상.")
         print("[테스트 알림 전송 완료] 디스코드를 확인하세요.")
+=======
+def send_discord_message(text: str) -> None:
+    """DISCORD_WEBHOOK_URL 로 웹훅 메시지를 보낸다.
+
+    디스코드 채널 설정 → 연동 → 웹후크 → '새 웹후크' 로 URL 을 만든 뒤
+    환경변수 DISCORD_WEBHOOK_URL 에 넣으면 된다.
+    """
+    webhook = os.environ["DISCORD_WEBHOOK_URL"]
+    # content 는 2000자 제한
+    resp = requests.post(webhook, json={"content": text[:1990]}, timeout=15)
+    resp.raise_for_status()
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# main
+# ────────────────────────────────────────────────────────────────────────────
+# searchRegnList 응답의 data[*].siteList 에 (siteNo, siteNm) 가 들어있다.
+SITE_LIST_MARKER = "searchRegnList"
+
+
+def run_list_theaters(headed: bool):
+    print("극장 목록(searchRegnList)을 가져오는 중입니다...\n")
+    rows, urls = _collect_json(CINEMA_URL, SITE_LIST_MARKER, headed=headed, debug=False)
+
+    # 응답 구조: data = [{regnGrpNm, siteList: [{siteNo, siteNm}, ...]}, ...]
+    # (일부 응답은 site 가 최상위 row 로 바로 오기도 해서 둘 다 처리)
+    sites = []
+    for row in rows:
+        candidates = row.get("siteList") if isinstance(row.get("siteList"), list) else [row]
+        for site in candidates:
+            if not isinstance(site, dict):
+                continue
+            no, nm = site.get("siteNo"), site.get("siteNm")
+            if no and nm:
+                sites.append((str(no), str(nm)))
+    sites = sorted(set(sites))
+
+    if not sites:
+        print("극장 목록을 못 받았습니다. Cloudflare 차단(해외/데이터센터 IP)일 수 있습니다.")
+        if urls:
+            print("관측된 JSON 엔드포인트:")
+            for u in sorted(set(urls)):
+                print(" ", u)
+        return
+
+    print(f"=== CGV 극장 {len(sites)}개 (siteNo  siteNm) ===")
+    for no, nm in sites:
+        mark = " ←" if "센텀" in nm else ""
+        print(f"  {no}  {nm}{mark}")
+    print("\n원하는 극장 코드로 실행:  CGV_SITE_NO=<코드> python watch_cgv.py --debug")
+
+
+def main():
+    argv = sys.argv[1:]
+    debug = "--debug" in argv
+    headed = "--headed" in argv
+
+    if "--list-theaters" in argv:
+        run_list_theaters(headed)
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
         return
 
     rows = fetch_screenings(headed=headed, debug=debug)

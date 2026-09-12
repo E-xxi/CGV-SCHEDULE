@@ -26,6 +26,7 @@ playwright install chromium
 python watch_cgv.py                 # 예매 오픈 확인 + 열렸으면 디스코드 알림
 python watch_cgv.py --debug         # 가로챈 회차를 자세히 출력 (알림 안 보냄)
 python watch_cgv.py --list-theaters # 극장명 → siteNo 목록
+<<<<<<< HEAD
 python watch_cgv.py --test-notify   # 디스코드 알림 설정 테스트 (메시지 1건 발송)
 python watch_cgv.py --headed        # 브라우저 창 띄워서 확인 (디버깅)
 ```
@@ -44,12 +45,21 @@ python watch_cgv.py --headed        # 브라우저 창 띄워서 확인 (디버�
 
 채널 설정 → 연동 → 웹후크 → 새 웹후크 → URL 복사 → `DISCORD_WEBHOOK_URL`
 
+=======
+python watch_cgv.py --headed        # 브라우저 창 띄워서 확인 (디버깅)
+```
+
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
 ### 환경변수
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
+<<<<<<< HEAD
 | `DISCORD_BOT_TOKEN` + `DISCORD_USER_ID` | — | 봇 DM 방식 (①) |
 | `DISCORD_WEBHOOK_URL` | — | 웹훅 방식 (②). 위 봇 설정이 있으면 무시됨 |
+=======
+| `DISCORD_WEBHOOK_URL` | (필수) | 알림 받을 디스코드 웹훅 URL (채널 설정 → 연동 → 웹후크) |
+>>>>>>> da0162a8a9b92f66865a778a7fb8da3002f49657
 | `CGV_SITE_NO` | `0089` | 극장 코드 (`--list-theaters`로 확인) |
 | `CGV_SITE_NM` | `센텀시티` | 극장명 (표시용) |
 | `CGV_MOVIE_KEYWORD` | `오디세이` | 영화명 포함 키워드 |
